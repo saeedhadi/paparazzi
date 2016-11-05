@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2010 Flixr
+ * Copyright (C) 2016  Hector Garcia de Marina
  *
  * This file is part of paparazzi.
  *
@@ -17,34 +17,26 @@
  * along with paparazzi; see the file COPYING.  If not, write to
  * the Free Software Foundation, 59 Temple Place - Suite 330,
  * Boston, MA 02111-1307, USA.
+ *
  */
 
-#ifndef SERVO_SWITCH_H
-#define SERVO_SWITCH_H
+/** \file gvf_line.h
+ *
+ *  Guidance algorithm based on vector fields
+ *  2D straight line trajectory
+ */
 
-#include "std.h"
-#include "paparazzi.h"
-#include "generated/airframe.h"
+#ifndef GVF_LINE_H
+#define GVF_LINE_H
 
-extern bool servo_switch_on;
-extern int16_t servo_switch_value;
+#include "modules/guidance/gvf/gvf.h"
 
-#ifndef SERVO_SWITCH_ON_VALUE
-#define SERVO_SWITCH_ON_VALUE 2000
-#endif
-#ifndef SERVO_SWITCH_OFF_VALUE
-#define SERVO_SWITCH_OFF_VALUE 1000
-#endif
-#ifndef SERVO_SWITCH_SERVO
-#define SERVO_SWITCH_SERVO SWITCH
-#endif
+typedef struct {
+  float alpha;
+} gvf_li_par;
 
+extern gvf_li_par gvf_line_par;
 
-extern void servo_switch_init(void);
-extern void servo_switch_periodic(void);
+extern void gvf_line_info(float *phi, struct gvf_grad *, struct gvf_Hess *);
 
-#define ServoSwitchOn()  ({ servo_switch_on = true; false; })
-#define ServoSwitchOff() ({ servo_switch_on = false; false; })
-
-#endif //SERVO_SWITCH_H
-
+#endif // GVF_LINE_H

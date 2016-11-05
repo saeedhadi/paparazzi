@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2010 Flixr
+ * Copyright (C) 2016  Hector Garcia de Marina
  *
  * This file is part of paparazzi.
  *
@@ -17,29 +17,28 @@
  * along with paparazzi; see the file COPYING.  If not, write to
  * the Free Software Foundation, 59 Temple Place - Suite 330,
  * Boston, MA 02111-1307, USA.
+ *
  */
 
-#include "servo_switch/servo_switch.h"
-#include "generated/airframe.h"
-#include "subsystems/actuators.h"
+/** \file gvf_ellipse.h
+ *
+ *  Guidance algorithm based on vector fields
+ *  2D Ellipse trajectory
+ */
 
-bool servo_switch_on;
+#ifndef GVF_ELLIPSE_H
+#define GVF_ELLIPSE_H
 
-// One level of macro stack to allow redefinition of the default servo
-#define _ServoSwitch(_n, _v) ActuatorSet(_n, _v)
-#define ServoSwitch(_n, _v) _ServoSwitch(_n, _v)
+#include "modules/guidance/gvf/gvf.h"
 
-void servo_switch_init(void)
-{
-  servo_switch_on = false;
-  servo_switch_periodic();
-}
+typedef struct {
+  float a;
+  float b;
+  float alpha;
+} gvf_ell_par;
 
-void servo_switch_periodic(void)
-{
-  if (servo_switch_on == TRUE) {
-    ServoSwitch(SERVO_SWITCH_SERVO, SERVO_SWITCH_ON_VALUE);
-  } else {
-    ServoSwitch(SERVO_SWITCH_SERVO, SERVO_SWITCH_OFF_VALUE);
-  }
-}
+extern gvf_ell_par gvf_ellipse_par;
+
+extern void gvf_ellipse_info(float *phi, struct gvf_grad *, struct gvf_Hess *);
+
+#endif // GVF_ELLIPSE_H

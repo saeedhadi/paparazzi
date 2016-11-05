@@ -18,17 +18,24 @@
  * <http://www.gnu.org/licenses/>.
  */
 /**
- * @file "modules/com/uart_drop.h"
+ * @file "modules/switching/switch_uart.h"
  * @author Freek van Tienen
  * Module for dropping balls using UART
  */
 
+#ifndef SWITCH_UART_H
+#define SWITCH_UART_H
+
 #include "std.h"
 
-#ifndef UART_DROP_H
-#define UART_DROP_H
+#define switch_uart_SwitchUartChannel(X) ({switch_uart_channel=X;drop_ball(switch_uart_channel); false;})
+
+extern uint8_t switch_uart_channel;
+extern uint8_t switch_uart_status;
 
 extern void drop_ball(uint8_t number);
+
+extern void periodic_switch_uart(void);
 
 #endif
 
