@@ -114,7 +114,7 @@ static void integrate(uint8_t wp_target)
 
 
 /** Update the RELEASE location with the actual ground speed and altitude */
-unit_t nav_drop_update_release(uint8_t wp_target)
+uint8_t nav_drop_update_release(uint8_t wp_target)
 {
 
   nav_drop_z = stateGetPositionUtm_f()->alt - waypoints[wp_target].a;
@@ -133,7 +133,7 @@ unit_t nav_drop_update_release(uint8_t wp_target)
 
 /** Compute a first approximation for the RELEASE waypoint from wind and
     expected airspeed and altitude */
-unit_t nav_drop_compute_approach(uint8_t wp_target, uint8_t wp_start, uint8_t wp_baseturn, uint8_t wp_climbout,
+uint8_t nav_drop_compute_approach(uint8_t wp_target, uint8_t wp_start, uint8_t wp_baseturn, uint8_t wp_climbout,
                                  float nav_drop_radius)
 {
   waypoints[WP_RELEASE].a = waypoints[wp_start].a;
@@ -184,7 +184,7 @@ unit_t nav_drop_compute_approach(uint8_t wp_target, uint8_t wp_start, uint8_t wp
 
 
 
-unit_t nav_drop_shoot(void)
+uint8_t nav_drop_shoot(void)
 {
   imcu_set_command(COMMAND_HATCH, MAX_PPRZ);
   return 0;
