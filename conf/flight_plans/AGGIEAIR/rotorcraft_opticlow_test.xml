@@ -28,7 +28,7 @@
     <block name="Holding point">
       <!-- set reporting functions for px4flow and lidar to ON -->
       <set var="px4flow_i2c_px4flow_i2c_downlink_status" value="MODULES_START"/>
-      <set var="lidar_lite_lidar_lite_downlink_status" value="MODULES_START"/>
+      <!--set var="lidar_lite_lidar_lite_downlink_status" value="MODULES_START"/-->
       <call fun="NavKillThrottle()"/>
       <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
     </block>

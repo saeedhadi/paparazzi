@@ -34,11 +34,18 @@
 #include "mcu_periph/i2c.h"
 
 enum Px4FlowStatus {
+  PX4FLOW_FRAME_REQ=0,
+  PX4FLOW_FRAME_REQ_OK,
+  PX4FLOW_FRAME_READ,
+  PX4FLOW_FRAME_READ_OK,
+  /*
   PX4FLOW_FRAME_REQ,
   PX4FLOW_FRAME_REC,
   PX4FLOW_INT_FRAME_REQ,
   PX4FLOW_INT_FRAME_REC
+  */
 };
+
 
 struct px4flow_i2c_frame
 {
@@ -66,7 +73,7 @@ struct px4flow_i2c_integral_frame
     int16_t gyro_z_rate_integral;//accumulated gyro z rates in radians*10000 since last I2C readout [rad*10000]
     uint32_t integration_timespan;//accumulation timespan in microseconds since last I2C readout [microseconds]
     uint32_t sonar_timestamp;// time since last sonar update [microseconds]
-    int16_t ground_distance;// Ground distance in meters*1000 [meters*1000]
+    uint16_t ground_distance;// Ground distance in meters*1000 [meters*1000]
     int16_t gyro_temperature;// Temperature * 100 in centi-degrees Celsius [degcelsius*100]
     uint8_t quality;// averaged quality of accumulated flow values [0:bad quality;255: max quality]
 };
@@ -78,6 +85,8 @@ struct px4flow_data
   struct i2c_transaction trans;
   uint8_t addr;
   float stddev;
+  float timestamp;
+  uint8_t id;
   enum Px4FlowStatus status;
   bool update_agl;
   bool compensate_rotation;
@@ -89,6 +98,7 @@ extern void px4flow_i2c_init(void);
 extern void px4flow_i2c_periodic(void);
 extern void px4flow_i2c_downlink(void);
 extern void px4flow_i2c_event(void);
+
 
 #endif /* PX4FLOW_I2C_H */
 

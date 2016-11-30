@@ -39,14 +39,11 @@
 #include "subsystems/datalink/downlink.h"
 
 /*
- * acceptable quality of optical flow (0-min,1-max)
- * higher threshold means fewer measurements will be available
- * but they will be more precise. Generally it is probably a better
- * idea to have lower threshold, and propagate the noise (1-quality)
- * to the INS
+ * Optical flow minimum quality threshold
+ * (min 0, max 255)
  */
 #ifndef PX4FLOW_QUALITY_THRESHOLD
-#define PX4FLOW_QUALITY_THRESHOLD 0.1
+#define PX4FLOW_QUALITY_THRESHOLD 75
 #endif
 
 struct px4flow_data px4flow;
@@ -57,6 +54,8 @@ struct MedianFilterInt sonar_filter;
 #define PX4FLOW_I2C_INTEGRAL_FRAME 0x16
 #define PX4FLOW_I2C_FRAME_LENGTH 22
 #define PX4FLOW_I2C_INTEGRAL_FRAME_LENGTH 25
+#define PX4FLOW_ID 0
+
 
 /**
  * Propagate optical flow information
@@ -85,11 +84,11 @@ static inline void px4flow_i2c_frame_cb(void)
     // flip the axis (if the PX4FLOW is mounted as shown in
     // https://pixhawk.org/modules/px4flow
     AbiSendMsgVELOCITY_ESTIMATE(PX4FLOW_VELOCITY_ID,
-                                time_usec,
-                                flow_comp_m_y,
-                                flow_comp_m_x,
-                                0.0f,
-                                noise);
+        time_usec,
+        flow_comp_m_y,
+        flow_comp_m_x,
+        0.0f,
+        noise);
   }
 
   // distance is always positive - use median filter to remove outliers
@@ -102,10 +101,10 @@ static inline void px4flow_i2c_frame_cb(void)
 
   // compensate AGL measurement for body rotation
   if (px4flow.compensate_rotation) {
-      float phi = stateGetNedToBodyEulers_f()->phi;
-      float theta = stateGetNedToBodyEulers_f()->theta;
-      float gain = (float)fabs( (double) (cosf(phi) * cosf(theta)));
-      ground_distance_float = ground_distance_float / gain;
+    float phi = stateGetNedToBodyEulers_f()->phi;
+    float theta = stateGetNedToBodyEulers_f()->theta;
+    float gain = (float)fabs( (double) (cosf(phi) * cosf(theta)));
+    ground_distance_float = ground_distance_float / gain;
   }
 
   if (px4flow.update_agl) {
@@ -125,30 +124,34 @@ void px4flow_i2c_init(void)
   px4flow.update_agl = USE_PX4FLOW_AGL;
   px4flow.compensate_rotation = PX4FLOW_COMPENSATE_ROTATION;
   px4flow.stddev = PX4FLOW_NOISE_STDDEV;
+  px4flow.timestamp = 0;
+  px4flow.id = PX4FLOW_ID;
 
   init_median_filter(&sonar_filter);
 }
 
-/**
- * Poll px4flow for data
- * 152 i2c frames are created per second, so the PX4FLOW can be polled
- * at up to 150Hz (faster rate won't bring any finer resolution)
- */
-void px4flow_i2c_periodic(void)
-{
+void px4flow_i2c_event(void){
   switch (px4flow.status) {
-    case PX4FLOW_FRAME_REQ:
-      // ask for i2c frame
-      px4flow.trans.buf[0] = PX4FLOW_I2C_FRAME;
-      if (i2c_transceive(&PX4FLOW_I2C_DEV, &px4flow.trans, px4flow.addr, 1, PX4FLOW_I2C_FRAME_LENGTH)) {
-        // transaction OK, increment status
-        px4flow.status = PX4FLOW_FRAME_REC;
+    case PX4FLOW_FRAME_REQ_OK:
+      // measurement request completed
+      if (px4flow.trans.status == I2CTransSuccess) {
+        // fetch the measurement
+        px4flow.status = PX4FLOW_FRAME_READ;
+        px4flow.trans.status = I2CTransDone;
+      }
+      else {
+        if (px4flow.trans.status == I2CTransFailed) {
+          // retry if failed
+          px4flow.trans.status = I2CTransDone;
+        }
       }
       break;
-    case PX4FLOW_FRAME_REC:
-      // check if the transaction was successful
+    case PX4FLOW_FRAME_READ_OK:
+      // data received
       if (px4flow.trans.status == I2CTransSuccess) {
-        // retrieve data
+        // update timestamp
+        px4flow.timestamp = get_sys_time_float();
+
         uint8_t idx = 0;
         px4flow.i2c_frame.frame_count = (px4flow.trans.buf[idx + 1] << 8 | px4flow.trans.buf[idx]);
         idx += sizeof(uint16_t);
@@ -174,63 +177,55 @@ void px4flow_i2c_periodic(void)
         idx += sizeof(uint8_t);
         px4flow.i2c_frame.ground_distance = (px4flow.trans.buf[idx + 1] << 8 | px4flow.trans.buf[idx]);
 
-        // send ABI messages
+        // send data
         px4flow_i2c_frame_cb();
+
+        // reset status
+        px4flow.status = PX4FLOW_FRAME_REQ;
+        px4flow.trans.status = I2CTransDone;
       }
-      // increment status
-#if REQUEST_INT_FRAME
-      // ask for the integral frame
-      px4flow.status = PX4FLOW_INT_FRAME_REQ;
-#else
-      // ask for regular frame again
-      px4flow.status = PX4FLOW_FRAME_REQ;
-#endif
-      break;
-    case PX4FLOW_INT_FRAME_REQ:
-      // ask for integral frame
-      px4flow.trans.buf[0] = PX4FLOW_I2C_INTEGRAL_FRAME;
-      if (i2c_transceive(&PX4FLOW_I2C_DEV, &px4flow.trans, px4flow.addr, 1, PX4FLOW_I2C_INTEGRAL_FRAME_LENGTH)) {
-        // transaction OK, increment status
-        px4flow.status = PX4FLOW_INT_FRAME_REC;
+      else {
+        if (px4flow.trans.status == I2CTransFailed) {
+          // retry if failed
+          px4flow.trans.status = I2CTransDone;
+        }
       }
-      break;
-    case PX4FLOW_INT_FRAME_REC:
-      // check if the transaction was successful
-      if (px4flow.trans.status == I2CTransSuccess) {
-        // retrieve data
-        uint8_t idx = 0;
-        px4flow.i2c_int_frame.frame_count_since_last_readout = (px4flow.trans.buf[idx + 1] << 8 | px4flow.trans.buf[idx]);
-        idx += sizeof(uint16_t);
-        px4flow.i2c_int_frame.pixel_flow_x_integral = (px4flow.trans.buf[idx + 1] << 8 | px4flow.trans.buf[idx]);
-        idx += sizeof(int16_t);
-        px4flow.i2c_int_frame.pixel_flow_y_integral = (px4flow.trans.buf[idx + 1] << 8 | px4flow.trans.buf[idx]);
-        idx += sizeof(uint16_t);
-        px4flow.i2c_int_frame.gyro_x_rate_integral = (px4flow.trans.buf[idx + 1] << 8 | px4flow.trans.buf[idx]);
-        idx += sizeof(int16_t);
-        px4flow.i2c_int_frame.gyro_y_rate_integral = (px4flow.trans.buf[idx + 1] << 8 | px4flow.trans.buf[idx]);
-        idx += sizeof(int16_t);
-        px4flow.i2c_int_frame.gyro_z_rate_integral = (px4flow.trans.buf[idx + 1] << 8 | px4flow.trans.buf[idx]);
-        idx += sizeof(int16_t);
-        px4flow.i2c_int_frame.integration_timespan = (px4flow.trans.buf[idx + 3] << 24 | px4flow.trans.buf[idx + 2] << 16
-            | px4flow.trans.buf[idx + 1] << 8 | px4flow.trans.buf[idx]);
-        idx += sizeof(uint32_t);
-        px4flow.i2c_int_frame.sonar_timestamp = (px4flow.trans.buf[idx + 3] << 24 | px4flow.trans.buf[idx + 2] << 16
-                                                | px4flow.trans.buf[idx + 1] << 8 | px4flow.trans.buf[idx]);
-        idx += sizeof(uint32_t);
-        px4flow.i2c_int_frame.ground_distance = (px4flow.trans.buf[idx + 1] << 8 | px4flow.trans.buf[idx]);
-        idx += sizeof(int16_t);
-        px4flow.i2c_int_frame.gyro_temperature = (px4flow.trans.buf[idx + 1] << 8 | px4flow.trans.buf[idx]);
-        idx += sizeof(int16_t);
-        px4flow.i2c_int_frame.quality = px4flow.trans.buf[idx];
-      }
-      // increment status
-      px4flow.status = PX4FLOW_FRAME_REQ;
       break;
     default:
       break;
   }
 }
 
+/**
+ * Poll px4flow for data
+ * 152 i2c frames are created per second, so the PX4FLOW can be polled
+ * at up to 150Hz (faster rate won't bring any finer resolution)
+ */
+void px4flow_i2c_periodic(void)
+{
+  switch (px4flow.status) {
+    case PX4FLOW_FRAME_REQ:
+      // request measurement
+      px4flow.trans.buf[0] = PX4FLOW_I2C_FRAME;
+      if (px4flow.trans.status == I2CTransDone) {
+        if (i2c_transmit(&PX4FLOW_I2C_DEV, &px4flow.trans, px4flow.addr, 1)) {
+          px4flow.status = PX4FLOW_FRAME_REQ_OK;
+        }
+      }
+      break;
+    case PX4FLOW_FRAME_READ:
+      // fetch data
+      if (px4flow.trans.status == I2CTransDone) {
+        //memset(px4flow.trans.buf, 0, sizeof(px4flow.trans.buf)); // erase rx buffer
+        if (i2c_receive(&PX4FLOW_I2C_DEV, &px4flow.trans, px4flow.addr, sizeof(px4flow.i2c_frame))) {
+          px4flow.status = PX4FLOW_FRAME_READ_OK;
+        }
+      }
+      break;
+    default:
+      break;
+  }
+}
 
 
 /**
@@ -240,10 +235,6 @@ void px4flow_i2c_periodic(void)
 void px4flow_i2c_downlink(void)
 {
   // Convert i2c_frame into PX4FLOW message
-  uint8_t id = 0;
-
-  float timestamp = get_sys_time_float();
-
   int16_t flow_x = px4flow.i2c_frame.pixel_flow_x_sum;
   int16_t flow_y = px4flow.i2c_frame.pixel_flow_y_sum;
 
@@ -251,15 +242,15 @@ void px4flow_i2c_downlink(void)
   float flow_comp_m_y = ((float)px4flow.i2c_frame.flow_comp_m_y) / 1000.0;
 
   uint8_t quality = px4flow.i2c_frame.qual;
-  float ground_distance = ((float)px4flow.i2c_frame.ground_distance) / 1000.0;
+  float ground_distance = ((float)px4flow.i2c_frame.ground_distance)/1000.0;
 
   DOWNLINK_SEND_PX4FLOW(DefaultChannel, DefaultDevice,
-                        &timestamp,
-                        &id,
-                        &flow_x,
-                        &flow_y,
-                        &flow_comp_m_x,
-                        &flow_comp_m_y,
-                        &quality,
-                        &ground_distance);
+      &px4flow.timestamp,
+      &px4flow.id,
+      &flow_x,
+      &flow_y,
+      &flow_comp_m_x,
+      &flow_comp_m_y,
+      &quality,
+      &ground_distance);
 }

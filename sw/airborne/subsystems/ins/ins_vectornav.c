@@ -240,7 +240,7 @@ void ins_vectornav_propagate()
   float_rmat_of_quat(&imu_rmat, &imu_quat);
   static struct FloatRMat ltp_to_body_rmat; // rotate to body frame
   float_rmat_comp(&ltp_to_body_rmat, &imu_rmat, orientationGetRMat_f(&ins_vn.body_to_imu));
-  stateSetNedToBodyRMat_f(&ltp_to_body_rmat); // set body states [rad]
+  stateSetNedToBodyRMat_f(&ltp_to_body_rmat); // set body states [rad] ????
 
   // NED (LTP) velocity [m/s]
   // North east down (NED), also known as local tangent plane (LTP),

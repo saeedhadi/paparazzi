@@ -42,6 +42,13 @@
       <message name="BEBOP_ACTUATORS"          period="0.2"/>
     </mode>
 
+    <mode name="indi">
+      <message name="DL_VALUE"                 period="0.5"/>
+      <message name="ALIVE"                    period="2.1"/>
+      <message name="ROTORCRAFT_FP"            period="0.1"/>
+      <message name="IMU_ACCEL"                period="0.1"/>
+    </mode>
+
     <mode name="raw_sensors">
       <message name="ROTORCRAFT_STATUS" period="1.2"/>
       <message name="DL_VALUE"          period="0.5"/>
@@ -57,8 +64,10 @@
       <message name="ROTORCRAFT_STATUS"      period="1.2"/>
       <message name="DL_VALUE"               period="0.5"/>
       <message name="ALIVE"                  period="2.1"/>
-      <message name="IMU_GYRO_SCALED"        period=".075"/>
-      <message name="IMU_ACCEL_SCALED"       period=".075"/>
+      <message name="IMU_GYRO_SCALED"        period=".1"/>
+      <message name="IMU_GYRO"               period=".1"/>
+      <message name="IMU_ACCEL_SCALED"       period=".1"/>
+      <message name="IMU_ACCEL"              period=".1"/>
       <message name="IMU_MAG_SCALED"         period=".1"/>
     </mode>
 

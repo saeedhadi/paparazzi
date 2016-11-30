@@ -34,9 +34,8 @@
     <module name="stabilization" type="indi" />
 
     <module name="guidance" type="indi">
-      <!--define name="GUIDANCE_INDI_SPECIFIC_FORCE_GAIN" value="-500.0"/-->
+      <define name="GUIDANCE_INDI_SPECIFIC_FORCE_GAIN" value="-500.0"/>
     </module>
-
 
     <module name="ahrs" type="int_cmpl_quat">
       <define name="AHRS_ICQ_IMU_ID" value="IMU_PX4_ID" />
@@ -45,19 +44,12 @@
       <define name="AHRS_USE_GPS_HEADING" value="FALSE"/>
     </module>
 
-    <module name="ahrs" type="float_mlkf">
-      <configure name="SECONDARY_AHRS" value="float_mlkf"/>
-    </module>
 
-
-<!--
     <module name="ahrs" type="vectornav">
       <configure name="VN_PORT" value="UART3"/>
       <configure name="VN_BAUD" value="B921600"/>
-      <configure name="TERTIARY_AHRS" value="vectornav"/>
+      <configure name="SECONDARY_AHRS" value="vectornav"/>
     </module>
--->
-
 
     <!--module name="ins" type="float_invariant">
       <define name="INS_FINV_IMU_ID" value="IMU_PX4_ID" />
@@ -67,7 +59,12 @@
     </module-->
 
     <!-- extended INS uses sonar for vertical estimates -->
-    <module name="ins" type="extended"/>
+    <module name="ins" type="extended">
+      <define name="INS_INT_IMU_ID" value="IMU_VECTORNAV_ID"/>
+      <define name="USE_SONAR" value="TRUE" />
+      <!--define name="INS_INT_VEL_ID" value="AGL_LIDAR_LITE_ID" /-->
+    </module>
+
     <!-- Horizontal Filter Float  (HFF) INS uses simple Kalman filters to horizontal estimate,
          No sonar/lidar updates though -->
     <!--module name="ins" type="hff"/-->
@@ -125,18 +122,20 @@
     <!-- CPU utilization monitor -->
     <module name="sys_mon"/>
 
+    <module name="air_data"/>
+
     <!-- optical flow camera over i2c-->
     <module name="px4flow_i2c">
-      <configure name="USE_PX4FLOW_AGL" value="0"/> <!-- send AGL measurements -->
+      <configure name="USE_PX4FLOW_AGL" value="1"/> <!-- send AGL measurements -->
       <configure name="PX4FLOW_COMPENSATE_ROTATION" value="1" /> <!-- compensate AGL for body rotation -->
       <configure name="PX4FLOW_NOISE_STDDEV" value="10.0"/> <!-- standard deviation of the optical flow measurements--> 
     </module>
 
     <!-- laser range finder for precise AGL measurement -->
-    <module name="lidar_lite">
-      <configure name="USE_LIDAR_LITE_AGL" value="1"/> <!-- dont send AGL measurements -->
-      <configure name="LIDAR_LITE_COMPENSATE_ROTATION" value="1" /> <!-- compensate AGL for body rotation -->
-    </module>
+    <!--module name="lidar_lite"-->
+      <!--configure name="USE_LIDAR_LITE_AGL" value="1"/--> <!-- dont send AGL measurements -->
+      <!--configure name="LIDAR_LITE_COMPENSATE_ROTATION" value="1" /--> <!-- compensate AGL for body rotation -->
+    <!--/module-->
 
     <!-- external mag for better heading estimate -->
     <module name="mag" type="hmc58xx">
@@ -148,6 +147,10 @@
       <define name="HMC58XX_CHAN_X_SIGN" value="-"/>
       <define name="HMC58XX_CHAN_Y_SIGN" value="+"/>
       <define name="HMC58XX_CHAN_Z_SIGN" value="+"/>
+    </module>
+
+    <module name="ins_lpe" >
+
     </module>
   </modules>
 
@@ -221,7 +224,7 @@
   </section>
 
   <section name="INS" prefix="INS_">
-    <define name="SONAR_MAX_RANGE" value="2.2" />
+    <define name="SONAR_MAX_RANGE" value="5.0" />
     <define name="SONAR_UPDATE_ON_AGL" value="TRUE" />
     <!-- Portland -->
     <define name="H_X" value="0.3702"/>
@@ -295,16 +298,16 @@
     <define name="USE_ADAPTIVE" value="FALSE" />
     <define name="ADAPTIVE_MU" value="0.0001" />
     <!-- max rates (conservative) -->
-    <define name="STABILIZATION_INDI_MAX_RATE" value="80" unit="rad/s"/>
-    <define name="STABILIZATION_INDI_MAX_R" value="80" unit="rad/s"/>
+    <define name="MAX_RATE" value="90" unit="deg/s"/>
+    <define name="MAX_R" value="90" unit="deg/s"/>
   </section>
 
   <section name="GUIDANCE_V" prefix="GUIDANCE_V_">
-    <define name="HOVER_KP" value="350" />
-    <define name="HOVER_KD" value="85" />
-    <define name="HOVER_KI" value="20" />
-    <define name="NOMINAL_HOVER_THROTTLE" value="0.4" />
-    <define name="ADAPT_THROTTLE_ENABLED" value="TRUE" />
+    <define name="HOVER_KP" value="70" />
+    <define name="HOVER_KD" value="70" />
+    <define name="HOVER_KI" value="40" />
+    <define name="NOMINAL_HOVER_THROTTLE" value="0.55" />
+    <define name="ADAPT_THROTTLE_ENABLED" value="FALSE" />
   </section>
 
   <section name="GUIDANCE_H" prefix="GUIDANCE_H_">
