@@ -101,15 +101,15 @@ static inline bool verify_chk(unsigned char data[], unsigned int length, uint16_
 
 static inline void vn200_read_buffer(struct VNPacket *vnp)
 {
-  while (uart_char_available(&VN_PORT) && !(vnp->msg_available)) {
-    vn200_parse(vnp, uart_getch(&VN_PORT));
+  while (uart_char_available(&VECTORNAV_PORT) && !(vnp->msg_available)) {
+    vn200_parse(vnp, uart_getch(&VECTORNAV_PORT));
   }
 }
 
 
 void vn200_event(struct VNPacket *vnp)
 {
-  if (uart_char_available(&VN_PORT)) {
+  if (uart_char_available(&VECTORNAV_PORT)) {
     vn200_read_buffer(vnp);
   }
 }
@@ -124,7 +124,7 @@ void vn200_parse(struct VNPacket *vnp, uint8_t c)
     case VNMsgSync:
       // sync the header
       vnp->msg_idx = 0;
-      if (c == VN_SYNC) {
+      if (c == VECTORNAV_SYNC) {
         vnp->status = VNMsgHeader;
       } else {
         vnp->hdr_error++;
@@ -132,7 +132,7 @@ void vn200_parse(struct VNPacket *vnp, uint8_t c)
       break;
     case VNMsgHeader:
       // read header data (we expect 0x39)
-      if (c == VN_OUTPUT_GROUP) {
+      if (c == VECTORNAV_OUTPUT_GROUP) {
         // increment idx and save current byte for checksum
         vnp->status = VNMsgGroup;
         vnp->msg_buf[vnp->msg_idx] = c;
@@ -147,8 +147,8 @@ void vn200_parse(struct VNPacket *vnp, uint8_t c)
       // read header data
       vnp->msg_buf[vnp->msg_idx] = c;
       vnp->msg_idx++;
-      if (vnp->msg_idx == VN_GROUP_BYTES) {
-        vnp->datalength = VN_PAYLOAD_SIZE + VN_HEADER_SIZE;
+      if (vnp->msg_idx == VECTORNAV_GROUP_BYTES) {
+        vnp->datalength = VECTORNAV_PAYLOAD_SIZE + VECTORNAV_HEADER_SIZE;
         vnp->status = VNMsgData;
       }
       break;
@@ -179,7 +179,7 @@ void vn200_parse(struct VNPacket *vnp, uint8_t c)
  */
 void vn200_read_message(struct VNPacket *vn_packet, struct VNData *vn_data)
 {
-  uint16_t idx = VN_HEADER_SIZE;
+  uint16_t idx = VECTORNAV_HEADER_SIZE;
 
   // Timestamp [nanoseconds] since startup
   memcpy(&vn_data->nanostamp, &vn_packet->msg_buf[idx], sizeof(uint64_t));
@@ -188,7 +188,7 @@ void vn200_read_message(struct VNPacket *vn_packet, struct VNData *vn_data)
   // Timestamp [s]
   vn_data->timestamp = ((float)vn_data->nanostamp / 1000000000); // [nanoseconds to seconds]
 
-  //Attitude, float, [degrees], yaw, pitch, roll, NED frame
+  //Attitude, float, [degrees], yaw, pitch, roll, imu frame
   memcpy(&vn_data->attitude, &vn_packet->msg_buf[idx], 3 * sizeof(float));
   idx += 3 * sizeof(float);
 

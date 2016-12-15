@@ -42,13 +42,13 @@
 /*
  * Defines for the serial communication
  */
-#define VN_SYNC 0xFA
-#define VN_OUTPUT_GROUP 0x39
-#define VN_GROUP_BYTES 8
+#define VECTORNAV_SYNC 0xFA
+#define VECTORNAV_OUTPUT_GROUP 0x39
+#define VECTORNAV_GROUP_BYTES 8
 
-#define VN_BUFFER_SIZE 512
-#define VN_HEADER_SIZE 9
-#define VN_PAYLOAD_SIZE 144
+#define VECTORNAV_BUFFER_SIZE 512
+#define VECTORNAV_HEADER_SIZE 9
+#define VECTORNAV_PAYLOAD_SIZE 144
 
 
 enum VNMsgStatus {
@@ -63,7 +63,7 @@ struct VNPacket {
   bool  msg_available;
   uint32_t chksm_error;
   uint32_t hdr_error;
-  uint8_t msg_buf[VN_BUFFER_SIZE];
+  uint8_t msg_buf[VECTORNAV_BUFFER_SIZE];
   enum VNMsgStatus status;
   uint8_t  msg_idx;
   uint16_t datalength;
@@ -76,6 +76,7 @@ struct VNPacket {
 };
 
 enum VNStatus {
+  VNUninitialized,
   VNNotTracking,
   VNOutOfSpecs,
   VNOK

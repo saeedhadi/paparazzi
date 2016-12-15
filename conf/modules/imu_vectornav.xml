@@ -1,0 +1,33 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+
+<module name="imu_vectornav" dir="imu">
+  <doc>
+    <description>
+      Vectornav VN-200
+      Used to just provide IMU measurements.
+      For use with an external AHRS algorithm.
+    </description>
+    <configure name="VECTORNAV_PORT" value="uart1" description="The (uart) port the XSens is connected to"/>
+    <configure name="VECTORNAV_BAUD" value="B115200" description="UART baud rate"/>
+  </doc>
+  <autoload name="imu_common"/>
+  <autoload name="imu_nps"/>
+  <header>
+    <file name="imu_vectornav.h" dir="subsystems/imu"/>
+  </header>
+  <init fun="imu_vectornav_init()"/>
+  <periodic fun="imu_vectornav_periodic()" freq="1" autorun="TRUE"/>
+  <event fun="imu_vectornav_event()"/>
+  <makefile target="ap">
+    <file name="imu_vectornav.c" dir="subsystems/imu"/>
+    <file name="vn200_serial.c" dir="peripherals"/>
+
+    <configure name="VECTORNAV_PORT" default="uart1" case="upper|lower"/>
+    <configure name="VECTORNAV_BAUD" default="B921600"/>
+    <define name="USE_$(VECTORNAV_PORT_UPPER)" value="1"/>
+    <define name="VECTORNAV_PORT" value="$(VECTORNAV_PORT_LOWER)"/>
+    <define name="$(VECTORNAV_PORT_UPPER)_BAUD" value="$(VECTORNAV_BAUD)"/>
+    <define name="IMU_TYPE_H" value="subsystems/imu/imu_vectornav.h" type="string"/>
+  </makefile>
+</module>
+

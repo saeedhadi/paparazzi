@@ -93,6 +93,28 @@
       <field name="thrust_increment" type="float" unit="m/s^2"/>
     </message>
 
+    <message name="IMU_VELOCITY_INT32" id="17">
+      <field name="stamp" type="uint32_t" unit="us"/>
+      <field name="velocity" type="struct Int32Vect3 *">The estimated velocity in the imu frame [m/s]</field>
+    </message>
+
+    <message name="IMU_EULERS_INT32" id="18">
+      <field name="stamp" type="uint32_t" unit="us"/>
+      <field name="attitude" type="struct Int32Eulers *">The estimated attitude (Euler angles) in the imu frame [rad]</field>
+    </message>
+
+    <message name="INS_UNCERTAINTY" id="19">
+      <field name="stamp" type="float" unit="s"/>
+      <field name="attitude" type="struct FloatEulers *">The uncertainty of the euler angle estimates [rad]</field>
+      <field name="velocity" type="struct FloatVect3 *">The uncertainty of the velocity estimates [m/s]</field>
+      <field name="position" type="struct FloatVect3 *">The uncertainty of the position estimates [m]</field>
+    </message>
+
+    <message name="LIN_ACCEL" id="20">
+      <field name="stamp" type="float" unit="s"/>
+      <field name="accel" type="struct FloatVect3 *">Linear acceleration (gravity filtered) in imu frame [m/s^2]</field>
+    </message>
+
   </msg_class>
 
 </protocol>
