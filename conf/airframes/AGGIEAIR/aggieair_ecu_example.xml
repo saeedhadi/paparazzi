@@ -14,13 +14,13 @@ Viking Motorsports ECU example
 
     <!-- Communication -->
     <module name="telemetry"   type="transparent">
-      <configure name="MODEM_PORT"        value="UART3"/>
+      <configure name="MODEM_PORT"        value="UART6"/>
       <configure name="MODEM_BAUD"        value="B57600"/>
     </module>
 
     <!-- Sensors -->
     <module name="gps"           type="ublox">
-      <configure name="GPS_PORT" value="UART6"/>
+      <configure name="GPS_PORT" value="UART3"/>
       <configure name="GPS_BAUD" value="B115200"/>
     </module>
 
