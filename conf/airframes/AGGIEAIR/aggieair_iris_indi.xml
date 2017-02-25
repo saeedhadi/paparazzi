@@ -155,6 +155,8 @@
     </module-->
 
     <module name="air_data"/>
+
+    <module name="foc"/>
   </modules>
 
   <section name="MISC">
