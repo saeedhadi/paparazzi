@@ -27,34 +27,65 @@
 #include "modules/foc/comp_nav_filter.h"
 
 #include "subsystems/abi.h"
+#include "subsystems/ahrs.h"
 
 // State interface for rotation compensation
-#include "state.h"
+//#include "state.h"
 
 /** ABI binding for IMU data.
  * Used for gyro, accel ABI messages.
  */
-#ifndef FOC_IMU_ID
-#define FOC_IMU_ID ABI_BROADCAST
+#ifndef AHRS_FOC_IMU_ID
+#define AHRS_FOC_IMU_ID ABI_BROADCAST
 #endif
-PRINT_CONFIG_VAR(FOC_IMU_ID)
+PRINT_CONFIG_VAR(AHRS_FOC_IMU_ID)
 
 static abi_event gyro_ev;
 static abi_event accel_ev;
+static uint8_t ahrs_foc_id = AHRS_COMP_ID_FOC;
 
 
+#if PERIODIC_TELEMETRY
+#include "subsystems/datalink/telemetry.h"
+#include "mcu_periph/sys_time.h"
+static void send_euler(struct transport_tx *trans, struct link_device *dev)
+{
+  struct FloatEulers euler;
+  euler.phi = (float)comp_nav_filter_Y.roll_est;
+  euler.theta = (float)comp_nav_filter_Y.pitch_est;
+  euler.psi = (float)comp_nav_filter_Y.yaw_est;
+  pprz_msg_send_AHRS_EULER(trans, dev, AC_ID,
+                           &euler.phi,
+                           &euler.theta,
+                           &euler.psi,
+                           &ahrs_foc_id);
+}
+#endif
 
 static void gyro_cb(uint8_t __attribute__((unused)) sender_id,
                     uint32_t stamp, struct Int32Rates *gyro)
 {
+  (void)stamp;
   // update inputs with float gyro data
+  // assuming the IMU is aligned with the body
+  struct FloatRates gyro_f;
+  RATES_FLOAT_OF_BFP(gyro_f, *gyro);
+  comp_nav_filter_U.roll_gyro = gyro_f.p; // in [rad/s]
+  comp_nav_filter_U.pitch_gyro = gyro_f.q; // in [rad/s]
+  comp_nav_filter_U.yaw_gyro = gyro_f.r; // in [rad/s]
 }
 
 static void accel_cb(uint8_t sender_id __attribute__((unused)),
                      uint32_t stamp __attribute__((unused)),
                      struct Int32Vect3 *accel)
 {
+  (void)stamp;
   // update inputs with float accel data
+  struct FloatVect3 accel_f;
+  ACCELS_FLOAT_OF_BFP(accel_f, *accel);
+  comp_nav_filter_U.roll_accel = accel_f.x; // [m/s^2]
+  comp_nav_filter_U.pitch_accel = accel_f.y; // [m/s^2]
+  comp_nav_filter_U.yaw_accel = accel_f.z; // [m/s^2]
 }
 
 /**
@@ -69,8 +100,12 @@ void foc_init(void)
   /*
    * Subscribe to scaled IMU measurements and attach callbacks
    */
-  AbiBindMsgIMU_GYRO_INT32(FOC_IMU_ID, &gyro_ev, gyro_cb);
-  AbiBindMsgIMU_ACCEL_INT32(FOC_IMU_ID, &accel_ev, accel_cb);
+  AbiBindMsgIMU_GYRO_INT32(AHRS_FOC_IMU_ID, &gyro_ev, gyro_cb);
+  AbiBindMsgIMU_ACCEL_INT32(AHRS_FOC_IMU_ID, &accel_ev, accel_cb);
+
+#if PERIODIC_TELEMETRY
+  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_AHRS_EULER, send_euler);
+#endif
 }
 
 
@@ -80,7 +115,7 @@ void foc_init(void)
  */
 void foc_periodic(void)
 {
-	// update inputs
+	// update inputs -> done in callbacks
 
 	// run step
 	comp_nav_filter_step();
