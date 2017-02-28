@@ -28,9 +28,8 @@
 
     <module name="stabilization" type="indi_simple"/>
 
-    <module name="ahrs" type="vectornav">
-      <configure name="VN_PORT" value="UART3"/>
-      <configure name="VN_BAUD" value="B921600"/>
+    <module name="ahrs" type="float_foc">
+      <define name="AHRS_FOC_IMU_ID" value="IMU_PX4_ID" />
     </module>
 
     <module name="ins"/>
@@ -99,10 +98,6 @@
     </module>
 
     <module name="air_data"/>
-
-    <module name="foc">
-      <define name="AHRS_FOC_IMU_ID" value="IMU_PX4_ID"/>
-    </module>
   </modules>
 
   <section name="MISC">

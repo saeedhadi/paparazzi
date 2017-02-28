@@ -38,7 +38,7 @@
    airframe="airframes/AGGIEAIR/aggieair_iris_indi.xml"
    radio="radios/AGGIEAIR/aggieair_FrSky3dr.xml"
    telemetry="telemetry/AGGIEAIR/aggieair_iris.xml"
-   flight_plan="flight_plans/rotorcraft_basic.xml"
+   flight_plan="flight_plans/AGGIEAIR/rotorcraft_opticlow_test.xml"
    settings="settings/rotorcraft_basic.xml [settings/test_actuators_pwm.xml]"
    settings_modules="modules/air_data.xml modules/gps.xml modules/stabilization_indi_simple.xml modules/nav_basic_rotorcraft.xml modules/guidance_rotorcraft.xml modules/imu_common.xml"
    gui_color="#337e387bffff"
